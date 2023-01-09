@@ -1,0 +1,27 @@
+{
+  "name": "labecommerce-backend",
+  "version": "1.0.0",
+  "description": "projeto de back-end feito na labenu",
+  "main": "index.js",
+  "scripts": {
+    "start": "clear && node ./index.js",
+    "dev":"node ./par-ou-impar.js",
+    "dev2": "node ./pedra-papel-tesoura.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "module",
+    "url": "git+https://github.com/wilsonbregeon/labecommerce-backend.git"
+  },
+  "keywords": [
+    "projeto",
+    "labenu",
+    "back-end"
+  ],
+  "author": "wilson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wilsonbregeon/labecommerce-backend/issues"
+  },
+  "homepage": "https://github.com/wilsonbregeon/labecommerce-backend#readme"
+}
