@@ -1,5 +1,6 @@
-import { products, purchases, users } from "./database"
+import { getAllUsers, queryProductsByName, createPurchase, getAllPurchasesFromClientId } from "./database"
 
-console.log(users)
-console.log(products)
-console.log(purchases)
+// console.log(queryProductsByName("screen"))
+// console.log(createPurchase())
+// console.log(getAllUsers())
+console.log(getAllPurchasesFromClientId("1"))
