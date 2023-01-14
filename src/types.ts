@@ -8,7 +8,7 @@ export type TProduct = {
     id:string,
     name:string,
     price:number,
-    category:string
+    category:TCategory
 }
 
 export type TPurchase = {
@@ -16,4 +16,10 @@ export type TPurchase = {
     productId:string,
     quantity:number,
     totalPrice:number
+}
+
+export enum TCategory {
+    ELECTRONICS = "Eletrônicos",
+    PERIPHERAL = "Periféricos",
+    HARDWARE = "Hardware"
 }
