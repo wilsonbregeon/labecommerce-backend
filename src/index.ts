@@ -213,6 +213,7 @@ app.get('/purchase', (req: Request, res: Response) => {
     res.status(200).send(purchases)
 })
 
+// Criar usuários
 app.post('/users', (req: Request, res: Response) => {
     try {
         const id = req.body.id
@@ -280,7 +281,7 @@ app.post('/users', (req: Request, res: Response) => {
 })
 
 // Criar produtos
-app.post('/products', (req: Request, res: Response) => {
+app.post('/product', (req: Request, res: Response) => {
     try {
         const id = req.body.id
         const name = req.body.name
