@@ -1,7 +1,6 @@
-import { products, users, purchases, queryProductsByName, createUser, createProduct, createPurchase } from "./database"
 import express, { Request, Response } from 'express'
 import cors from 'cors'
-import { TCategory, TProduct, TProductDB, TPurchase, TPurchaseDB, TUserDB } from "./types"
+import { TProductDB, TPurchaseDB, TUserDB } from "./types"
 import { db } from "./database/knex"
 
 const app = express()
@@ -12,42 +11,55 @@ app.listen(3003, () => {
     console.log("Servidor rodando na porta 3003")
 })
 
-// Exercício 1 - Introdução Knex: A) Pesquisa todos os usuários;
+// Exercício 1 - Introdução Knex: A) Pesquisa todos os usuários ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.get('/users', async (req: Request, res: Response) => {
     try {
-        const result = await db.raw(`
-            SELECT * FROM users;
-        `)
+        const result = await db("users")
+
         res.status(200).send(result)
-    } catch (error: any) {
+
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
-// Exercício 1 - Introdução Knex: B) Pesquisa todos os produtos;
+// Exercício 1 - Introdução Knex: B) Pesquisa todos os produtos ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.get('/products', async (req: Request, res: Response) => {
     try {
-        const result = await db.raw(`
-            SELECT * FROM products;
-        `)
+        const result = await db("products")
+
         res.status(200).send(result)
-    } catch (error: any) {
+
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
-// Exercício 1 - Introdução Knex: C) Pesquisa um produto pelo seu "name";
+// Exercício 1 - Introdução Knex: C) Pesquisa um produto pelo seu "name" ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.get('/product/search', async (req: Request, res: Response) => {
     try {
-        const query = req.query.q as string
+        const query = req.query.q as string | undefined
+
         if (query !== undefined) {
             if (query.length < 1) {
                 res.status(400)
@@ -58,22 +70,26 @@ app.get('/product/search', async (req: Request, res: Response) => {
             throw new Error("'query' precisa ser definida!")
         }
 
-        const result = await db.raw(`
-            SELECT * FROM products
-            WHERE name = "${query}";
-        `)
+        const result = await db("products").where("name", "LIKE", `%${query}%`)
+
         res.status(200).send(result)
 
-    } catch (error: any) {
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
-// Exercício 2 - Introdução Knex: A) Cria um usuário;
+// Exercício 2 - Introdução Knex: A) Cria um usuário ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.post('/users', async (req: Request, res: Response) => {
     try {
 
@@ -105,61 +121,56 @@ app.post('/users', async (req: Request, res: Response) => {
         }
 
         if (!password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,12}$/g)) {
+            res.status(400)
             throw new Error("'password' deve possuir entre 8 e 12 caracteres, com letras maiúsculas e minúsculas e no mínimo um número e um caractere especial")
         }
 
-        // const [userIdAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({id})
-
-        const [userIdAlreadyExists] = await db.raw(`
-            SELECT * FROM users
-            WHERE id = "${id}";
-        `)
+        // Verifica se o "id" do usuário já existe
+        const [userIdAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({ id })
 
         if (userIdAlreadyExists) {
             res.status(400)
             throw new Error("'id' já existe!")
         }
 
-        const [userEmailAlreadyExists] = await db.raw(`
-            SELECT * FROM users
-            WHERE email = "${email}";
-        `)
+        // Verifica se o "email" do usuário já existe
+        const [userEmailAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({ email })
 
         if (userEmailAlreadyExists) {
             res.status(400)
             throw new Error("'email' já existe!")
         }
 
-        await db.raw(`
-            INSERT INTO users (id, name, email, password)
-            VALUES ("${id}","${name}","${email}", "${password}");
-        `)
+        const newUser: TUserDB = {
+            id,
+            name,
+            email,
+            password
+        }
 
-        // const [userEmailAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({email})
-
-        // const newUser: TUserDB = {
-        //     id,
-        //     name,
-        //     email,
-        //     password
-        // }
-
-        // await db("users").insert(newUser)
+        await db("users").insert(newUser)
 
         res.status(201).send({
             message: "User criado com sucesso!",
+            user: newUser
         })
 
-    } catch (error: any) {
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
-// Exercício 2 - Introdução Knex: B) Cria um produto;
+// Exercício 2 - Introdução Knex: B) Cria um produto ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.post('/products', async (req: Request, res: Response) => {
     try {
         const { id, name, price, description, image_url } = req.body
@@ -167,6 +178,11 @@ app.post('/products', async (req: Request, res: Response) => {
         if (typeof id !== "string") {
             res.status(400)
             throw new Error("'id' deve ser string!")
+        }
+
+        if (id[0] !== "p") {
+            res.status(400)
+            throw new Error("'id' deve iniciar com a letra 'p' minúscula!")
         }
 
         if (id.length < 4) {
@@ -194,44 +210,45 @@ app.post('/products', async (req: Request, res: Response) => {
             throw new Error("'image_url' tem que ser string!")
         }
 
-        // const [productIdAlreadyExists]: TProductDB[] | undefined[] = await db("products").where({ id })
-
-        const [productIdAlreadyExists] = await db.raw(`
-            SELECT * FROM products
-            WHERE id = "${id}"
-        `)
+        // Verifica se a "id" do produto já existe
+        const [productIdAlreadyExists]: TProductDB[] | undefined[] = await db("products").where({ id })
 
         if (productIdAlreadyExists) {
             res.status(400)
             throw new Error("'id' já existe!")
         }
 
-        // const newProduct: TProductDB = {
-        //     id,
-        //     name,
-        //     price,
-        //     description,
-        //     image_url
-        // }
+        const newProduct: TProductDB = {
+            id,
+            name,
+            price,
+            description,
+            image_url
+        }
 
-        // await db("products").insert(newProduct)
+        await db("products").insert(newProduct)
 
-        await db.raw(`
-            INSERT INTO products (id, name, price, description, image_url)
-            VALUES ("${id}", "${name}", "${price}", "${description}", "${image_url}")
-        `)
+        res.status(201).send({
+            message: "Produto cadastrado com sucesso!",
+            product: newProduct
+        })
 
-        res.status(201).send("Produto cadastrado com sucesso!")
-    } catch (error: any) {
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
-// Exercício 2 - Introdução Knex: C) Cria uma compra;
+// Exercício 2 - Introdução Knex: C) Cria uma compra ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.post('/purchases', async (req: Request, res: Response) => {
     try {
         const { id, buyer, total_price } = req.body
@@ -251,242 +268,517 @@ app.post('/purchases', async (req: Request, res: Response) => {
             throw new Error("'total_price' deve ser number")
         }
 
-        // const [purchaseIdAlreadyExists]: TPurchaseDB[] | undefined[] = await db("purchases").where({ id })
-
-        const [purchaseIdAlreadyExists] = await db.raw(`
-            SELECT * FROM purchases
-            WHERE id = "${id}";
-        `)
+        // Verifica se o "id" da compra já existe
+        const [purchaseIdAlreadyExists]: TPurchaseDB[] | undefined[] = await db("purchases").where({ id })
 
         if (purchaseIdAlreadyExists) {
             res.status(400)
             throw new Error("'id' da compra já existe!")
         }
 
-        await db.raw(`
-            INSERT INTO purchases (id, buyer, total_price)
-            VALUES ("${id}", "${buyer}", "${total_price}");
-        `)
+        const newPurchase = {
+            id,
+            buyer,
+            total_price,
+        }
 
-        // const newPurchase = {
-        //     id,
-        //     buyer,
-        //     total_price,
-        // }
+        await db("purchases").insert(newPurchase)
 
-        // await db("purchases").insert(newPurchase)
-
-        // const [insertedPurchase]: TPurchaseDB[] = await db("purchases").where({ id })
+        const [insertedPurchase]: TPurchaseDB[] = await db("purchases").where({ id })
 
         res.status(201).send({
-            message: "Compra cadastrada com sucesso!"
-            // purchase: insertedPurchase
+            message: "Compra cadastrada com sucesso!",
+            purchase: insertedPurchase
         })
 
-    } catch (error: any) {
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
-// Exercício 3 - Introdução Knex: A) Pesquisa um produto através do "id";
+// Exercício 3 - Introdução Knex: A) Pesquisa um produto através do "id" ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.get('/products/:id', async (req: Request, res: Response) => {
     try {
-        const id = req.query.id as string
+        const searchProductId = req.query.id as string
 
-        if (id[0] !== "p") {
+        if (searchProductId === undefined) {
+            res.status(400)
+            throw new Error("'id' do produto precisa ser definido!")
+        }
+
+        if (searchProductId[0] !== "p") {
             res.status(400)
             throw new Error("'id' deve iniciar com a letra 'p' minúscula!")
         }
 
-        if (id.length < 4 || id.length > 4) {
+        if (searchProductId.length < 4 || searchProductId.length > 4) {
             res.status(400)
             throw new Error("'query' deve possuir 4 caracteres!")
         }
 
-        const result = await db.raw(`
-            SELECT * FROM products
-            WHERE id = "${id}";
-        `)
+        // Procura o "id" do produto no banco de dados para ver se existe
+        const [product]: TProductDB[] | undefined[] = await db("products").where({ id: searchProductId })
+
+        // Caso o "id" do produto não existir, retorna a condição abaixo
+        if (!product) {
+            res.status(404)
+            throw new Error("'id' do produto não encontrado!")
+        }
+
+        const result = await db("products").where("id", "=", `${searchProductId}`)
 
         res.status(200).send(result)
-    } catch (error: any) {
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
-    }
-})
 
-app.get('/user/:id', async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id
-        const filterUser = users.find((user) => user.id === id)
-
-        if (!filterUser) {
-            res.status(404)
-            throw new Error("Usuário não encontrado!")
-        }
-        if (filterUser) {
-            res.status(200).send(filterUser)
+        if (error instanceof Error) {
+            res.send(error.message)
         } else {
-            res.status(200).send("Usuário não encontrado!")
+            res.send("Erro inesperado")
         }
-    } catch (error: any) {
-        console.log(error)
-        if (res.statusCode === 200) {
-            res.status(500)
-        }
-        res.send(error.message)
     }
 })
 
-// Exercício 3 - Introdução Knex: B) Pesquisa uma compra de um usuário pelo "id";
+// ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
+app.get('/users/:id', async (req: Request, res: Response) => {
+    try {
+        const searchUserId = req.query.id as string
+
+        if (searchUserId === undefined) {
+            res.status(400)
+            throw new Error("'id' do usuário precisa ser definido!")
+        }
+
+        if (searchUserId[0] !== "u" || searchUserId.length > 4 || searchUserId.length < 4) {
+            res.status(400)
+            throw new Error("'id' do usuário deve iniciar com a letra 'u' minúscula, seguido de 3 números e possuir 4 caracteres. Ex: u001")
+        }
+
+        // Procura o "id" do usuário no banco de dados para ver se existe
+        const [user]: TUserDB[] | undefined[] = await db("users").where({ id: searchUserId })
+
+        // Caso o "id" do usuário não existir, retorna a condição abaixo
+        if (!user) {
+            res.status(404)
+            throw new Error("'id' do usuário não encontrado!")
+        }
+
+        const result = await db("users").where("id", "=", `${searchUserId}`)
+
+        res.status(200).send(result)
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+})
+
+// Exercício 3 - Introdução Knex: B) Pesquisa uma compra de um usuário pelo "id" do usuário ------ Exercício 1 - Aprofundando Knex: Refatoração do código de raw para query builder;
 app.get('/users/:buyerId/purchases', async (req: Request, res: Response) => {
     try {
         const buyerId = req.params.buyerId as string
 
-        if (buyerId[0] !== "u") {
+        if (buyerId[0] !== "u" || buyerId.length < 4 || buyerId.length > 4) {
             res.status(400)
-            throw new Error("'buyerId' deve iniciar com a letra 'u' minúscula!")
+            throw new Error("'buyerId' deve iniciar com a letra 'u' minúscula, seguido de 3 números e possuir 4 caracteres. Ex: u001")
         }
 
-        if (buyerId.length < 4 || buyerId.length > 4) {
-            res.status(400)
-            throw new Error("'buyerId' deve possuir 4 caracteres!")
+        const [user]: TPurchaseDB[] | undefined[] = await db("purchases").where({ buyer: buyerId })
+
+        if (!user) {
+            res.status(404)
+            throw new Error("'id' do usuário não encontrado!")
         }
 
-        const result = await db.raw(`
-            SELECT * FROM purchases
-            WHERE buyer = "${buyerId}";
-    `)
+        const result = await db("purchases")
+            .select(
+                "id AS purchaseId",
+                "buyer AS buyerId",
+                "total_price AS totalPrice",
+                "created_at AS createdAt",
+                "paid"
+            )
+            .where("buyer", "=", `${buyerId}`)
 
         res.status(200).send(result)
-    } catch (error: any) {
+    } catch (error) {
         console.log(error)
-        if (res.statusCode === 200) {
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        res.send(error.message)
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
 })
 
 // Deletar usuário pelo ID
-app.delete('users/:id', async (req: Request, res: Response) => {
-    const id = req.params.id
-    const filterDeleteUser = users.findIndex((user) => user.id === id)
+app.delete('/users/:id', async (req: Request, res: Response) => {
+    try {
+        const idToDelete = req.params.id
 
-    if (filterDeleteUser >= 0) {
-        users.splice(filterDeleteUser, 1)
-    } else {
-        res.status(404)
-        throw new Error("Usuário não encontrado!")
+        if (idToDelete[0] !== "u" || idToDelete.length < 4 || idToDelete.length > 4) {
+            res.status(400)
+            throw new Error("'id' do usuário deve iniciar com a letra 'u' minúscula, seguido de 3 números e possuir 4 caracteres. Ex: u001")
+        }
+
+        const [userIdAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({ id: idToDelete })
+
+        if (!userIdAlreadyExists) {
+            res.status(404)
+            throw new Error("'id' do usuário não encontrado!")
+        }
+
+        await db("purchases").del().where({ buyer: idToDelete })
+        await db("users").del().where({ id: idToDelete })
+
+        res.status(200).send({ message: "Usuário deletado com sucesso!" })
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
-    res.status(200).send("Usuário excluído com sucesso!")
 })
 
 // Editar usuário pelo ID
-app.put('users/:id', async (req: Request, res: Response) => {
-    const id = req.params.id
-    const newId = req.body.id as string | undefined
-    const newEmail = req.body.email as string | undefined
-    const newPass = req.body.password as string | undefined
-    const filterUser = users.find((user) => user.id === id)
+app.put('/users/:id', async (req: Request, res: Response) => {
+    try {
+        const idToEdit = req.params.id
 
-    if (!filterUser) {
-        res.status(404)
-        throw new Error("Usuário não encontrado!")
-    }
+        const { newId, newName, newEmail, newPassword } = req.body
 
-    if (newEmail !== undefined) {
-        if (typeof newEmail !== "string") {
+        // Validações do idToEdit
+        if (idToEdit === ":id") {
             res.status(400)
-            throw new Error("Email deve ser uma string")
+            throw new Error("'id' do usuário a ser editado precisa ter um valor definido!")
         }
-    }
 
-    if (newPass !== undefined) {
-        if (typeof newPass !== "string") {
+        if (idToEdit[0] !== "u") {
             res.status(400)
-            throw new Error("Senha deve ser uma string!")
+            throw new Error("'id' do usuário a ser editado precisa iniciar com a letra 'u' minúscula!")
         }
-    }
 
-    if (filterUser) {
-        filterUser.id = newId || filterUser.id
-        filterUser.email = newEmail || filterUser.email
-        filterUser.password = newPass || filterUser.password
-    }
-    res.status(200).send("Atualização realizada com sucesso!")
-})
+        if (idToEdit.length > 4 || idToEdit.length < 4) {
+            res.status(400)
+            throw new Error("'id' deve possuir 4 caracteres!")
+        }
 
-// Criar produto
-app.put('/products/:id', async (req: Request, res: Response) => {
-    const id = req.params.id
-    const newId = req.body.id as string | undefined
-    const newName = req.body.name as string | undefined
-    const newPrice = req.body.price as number | undefined
-    const newCategory = req.body.category as TCategory | undefined
+        if (req.body.raw === undefined) {
+            res.status(400)
+            throw new Error("Inserir a estrutura do body!")
+        }
 
-    const filterProduct = products.find((product) => product.id === id)
+        // Validações do newId
+        if (newId === "") {
+            res.status(400)
+            throw new Error("'newId' tem que ser preenchido!")
+        }
 
-    if (!filterProduct) {
-        res.status(404)
-        throw new Error("Produto não encontrado!")
-    }
+        if (newId[0] !== "u") {
+            res.status(400)
+            throw new Error("'newId' deve iniciar com a letra 'u' minúscula!")
+        }
 
-    if (newName !== undefined) {
+        if (typeof newId !== "string") {
+            res.status(400)
+            throw new Error("'newId' precisa ser string!")
+        }
+
+        // Validações do newName
+        if (newName === "") {
+            res.status(400)
+            throw new Error("'newName' precisa ser preenchido!")
+        }
+
         if (typeof newName !== "string") {
             res.status(400)
-            throw new Error("Valor inválido, nome do cliente precisa ser string!")
+            throw new Error("'newName' precisa ser string!")
+        }
+
+        // Validações do newEmail
+        if (newEmail === "") {
+            res.status(400)
+            throw new Error("'newEmail' precisa ser preenchido!")
+        }
+
+        if (typeof newEmail !== "string") {
+            res.status(400)
+            throw new Error("'newEmail' precisa ser string!")
+        }
+
+        // Validações do newPassword
+        if (typeof newPassword !== "string") {
+            res.status(400)
+            throw new Error("'newPassword' precisa ser string!")
+        }
+
+        if (!newPassword.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,12}$/g)) {
+            res.status(400)
+            throw new Error("'password' deve possuir entre 8 e 12 caracteres, com letras maiúsculas e minúsculas e no mínimo um número e um caractere especial")
+        }
+
+        // Verifica se o "id" do usuário a ser editado existe no banco de dados
+        const [user]: TUserDB[] | undefined[] = await db("users").where({ id: idToEdit })
+
+        if (!user) {
+            res.status(404)
+            throw new Error(`Id:'${idToEdit}' não encontrado na base de dados!`)
+        }
+
+        if (user.id === newId) {
+            res.status(400)
+            throw new Error(`'id' ${newId} já está em uso por esse usuário atualmente!`)
+        }
+
+        // Verifica se o "id" do usuário existe no banco de dados
+        const [userIdAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({ id: newId })
+
+        if (userIdAlreadyExists) {
+            res.status(400)
+            throw new Error(`'id' ${newId} já está em uso por um outro usuário!`)
+        }
+
+        // Verifica se o "email" do usuário existe no banco de dados
+        const [userEmailAlreadyExists]: TUserDB[] | undefined[] = await db("users").where({ email: newEmail })
+
+        if (userEmailAlreadyExists) {
+            res.status(400)
+            throw new Error(`Email: '${newEmail}' já está sendo utilizado!`)
+        }
+
+        const newUser: TUserDB = {
+            id: newId,
+            name: newName,
+            email: newEmail,
+            password: newPassword
+        }
+
+        await db("users").update(newUser).where({ id: idToEdit })
+
+        res.status(200).send({
+            message: "Usuário editado com sucesso!",
+            user: newUser
+        })
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
         }
     }
+})
 
-    if (newPrice !== undefined) {
+// Edita produto
+app.put('/products/:id', async (req: Request, res: Response) => {
+    try {
+        const idToEdit = req.params.id
+        const { newId, newName, newPrice, newDescription, newImageUrl } = req.body
+
+        // Validações do idToEdit
+        if (idToEdit === ":id") {
+            res.status(200)
+            throw new Error("'id' do produto a ser editado precisa ter um valor definido!")
+        }
+
+        if (idToEdit[0] !== "p") {
+            res.status(400)
+            throw new Error("'id' do usuário a ser editado precisa iniciar com a letra 'p' minúscula!")
+        }
+
+        if (idToEdit.length > 4 || idToEdit.length < 4) {
+            res.status(400)
+            throw new Error("'id' deve possuir 4 caracteres!")
+        }
+
+        // Validações do newId
+        if (newId === "") {
+            res.status(400)
+            throw new Error("'newId' tem que ser preenchido!")
+        }
+
+        if (newId[0] !== "p") {
+            res.status(400)
+            throw new Error("'newId' deve iniciar com a letra 'p' minúscula!")
+        }
+
+        if (typeof newId !== "string") {
+            res.status(400)
+            throw new Error("'newId' precisa ser string!")
+        }
+
+        // Validações do newName
+        if (newName === "") {
+            res.status(400)
+            throw new Error("'newName' precisa ser preenchido!")
+        }
+
+        if (typeof newName !== "string") {
+            res.status(400)
+            throw new Error("'newName' precisa ser string!")
+        }
+
+        // Validações do newPrice
         if (typeof newPrice !== "number") {
             res.status(400)
-            throw new Error("Valor inválido, preço do produto precisa ser um número!")
+            throw new Error("'newPrice' precisa ser number!")
         }
-    }
 
-    if (newCategory !== undefined) {
-        if (
-            newCategory !== "Eletrônicos" &&
-            newCategory !== "Periféricos" &&
-            newCategory !== "Hardware"
-        ) {
+        // Validações do newDescription
+        if (newDescription === "") {
             res.status(400)
-            throw new Error("Valor inválido, categoria do produto informado não existe!")
+            throw new Error("'newDescription' precisa ser preenchido!")
+        }
+
+        if (typeof newDescription !== "string") {
+            res.status(400)
+            throw new Error("'newDescription' precisa ser string!")
+        }
+
+        // Validações do newImageUrl
+        if (newImageUrl === "") {
+            res.status(400)
+            throw new Error("'newImageUrl' precisa ser preenchido!")
+        }
+
+        if (typeof newImageUrl !== "string") {
+            res.status(400)
+            throw new Error("'newImageUrl' precisa ser string!")
+        }
+
+        // Verifica se o "id" do produto a ser editado existe no banco de dados
+        const [product]: TProductDB[] | undefined[] = await db("products").where({ id: idToEdit })
+
+        if (!product) {
+            res.status(404)
+            throw new Error(`Id:'${idToEdit}' não encontrado na base de dados!`)
+        }
+
+        if (product.id === newId) {
+            res.status(400)
+            throw new Error(`'id' ${newId} já está em uso para esse produto atualmente!`)
+        }
+
+        // Verifica se o "id" do usuário existe no banco de dados
+        const [productIdAlreadyExists]: TUserDB[] | undefined[] = await db("products").where({ id: newId })
+
+        if (productIdAlreadyExists) {
+            res.status(400)
+            throw new Error(`'id' ${newId} já está em uso por um outro produto!`)
+        }
+
+        const newProduct: TProductDB = {
+            id: newId,
+            name: newName,
+            price: newPrice,
+            description: newDescription,
+            image_url: newImageUrl
+        }
+
+        await db("products").update(newProduct).where({ id: idToEdit })
+
+        res.status(200).send({
+            message: "Produto editado com sucesso!",
+            user: newProduct
+        })
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
         }
     }
-
-    if (filterProduct) {
-        filterProduct.id = newId || filterProduct.id
-        filterProduct.name = newName || filterProduct.name
-        filterProduct.price = newPrice || filterProduct.price
-        filterProduct.category = newCategory || filterProduct.category
-    }
-    res.status(200).send("Atualização realizada com sucesso!")
 })
 
 // Deletar produto pelo ID
 app.delete('/products/:id', async (req: Request, res: Response) => {
-    const id = req.params.id
-    const filterProductUser = products.findIndex((product) => product.id === id)
+    try {
+        const idToDelete = req.params.id
 
-    if (filterProductUser >= 0) {
-        products.splice(filterProductUser, 1)
+        if (idToDelete[0] !== "p" || idToDelete.length < 4 || idToDelete.length > 4) {
+            res.status(400)
+            throw new Error("'id' do produto deve iniciar com a letra 'p' minúscula, seguido de 3 números e possuir 4 caracteres. Ex: p001")
+        }
+
+        const [productIdAlreadyExists]: TProductDB[] | undefined[] = await db("products").where({ id: idToDelete })
+
+        if (!productIdAlreadyExists) {
+            res.status(404)
+            throw new Error("'id' do produto não encontrado!")
+        }
+
+        await db("products").del().where({ id: idToDelete })
+
+        res.status(200).send({ message: "Produto deletado com sucesso!" })
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
     }
-    res.status(200).send("Produto excluído com sucesso!")
+
 })
 
 app.get('/purchases', async (req: Request, res: Response) => {
     const result = await db.raw(`
-            SELECT * FROM purchases_products;
+            SELECT * FROM purchases;
         `)
     res.status(200).send(result)
 })

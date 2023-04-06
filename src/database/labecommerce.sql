@@ -117,20 +117,19 @@ CREATE TABLE purchases (
     total_price REAL NOT NULL,
     created_at TEXT DEFAULT (DATETIME()) NOT NULL,
     paid INTEGER DEFAULT (0) NOT NULL,
-    FOREIGN KEY (buyer) REFERENCES users (id)
+    FOREIGN KEY (buyer) REFERENCES users (id) 
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
-
-DROP TABLE purchases;
-
 
 -- Exercício 2 - Relações SQL I: A) Criação de dois pedidos para cada usuário cadastrado;
 -- Exercício 3 - Relações SQL II: Refatoração para a inserção de novas compras na tabela "purchases";
 INSERT INTO purchases (id, buyer, total_price, paid)
 VALUES
-("purchase001", "u001", 1000, 1),
-("purchase002", "u001", 2500, 1),
-("purchase003", "u002", 1200, 1),
-("purchase004", "u002", 1800, 1);
+("purchase001", "u001", 1000, 0),
+("purchase002", "u001", 2500, 0),
+("purchase003", "u002", 1200, 0),
+("purchase004", "u002", 1800, 0);
 
 SELECT * FROM purchases; 
 
@@ -155,8 +154,12 @@ CREATE TABLE purchases_products (
     purchase_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT (1),
-    FOREIGN KEY (purchase_id) REFERENCES purchases (id),
-    FOREIGN KEY (product_id) REFERENCES products (id)
+    FOREIGN KEY (purchase_id) REFERENCES purchases (id) 
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products (id) 
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 
